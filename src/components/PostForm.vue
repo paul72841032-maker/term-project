@@ -2,8 +2,17 @@
   <form @submit.prevent="onSubmit" class="form">
     <div class="row">
       <label class="label">카테고리</label>
-      <select v-model="category" class="input" required>
-        <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+
+      <!-- ✅ 네가 원한 select 스타일을 여기로 이식 -->
+      <select
+          v-model="category"
+          class="w-full rounded-lg border border-white/10 bg-white/10 text-white px-3 py-2
+               focus:outline-none focus:ring-2 focus:ring-violet-400"
+          required
+      >
+        <option v-for="c in categories" :key="c" :value="c" class="text-black">
+          {{ c }}
+        </option>
       </select>
     </div>
 
@@ -19,7 +28,9 @@
 
     <div class="actions">
       <button type="button" v-if="mode === 'edit'" class="btn" @click="$emit('cancel')">취소</button>
-      <button type="submit" class="btn primary">{{ mode === "create" ? "등록" : "수정 저장" }}</button>
+      <button type="submit" class="btn primary">
+        {{ mode === "create" ? "등록" : "수정 저장" }}
+      </button>
     </div>
   </form>
 </template>
@@ -45,16 +56,18 @@ const emit = defineEmits<{
   (e: "cancel"): void;
 }>();
 
+const categories = props.categories;
+
 const title = ref(props.initialTitle ?? "");
 const content = ref(props.initialContent ?? "");
-const category = ref(props.initialCategory ?? props.categories[0]);
+const category = ref(props.initialCategory ?? categories[0]);
 
 watch(
     () => [props.initialTitle, props.initialContent, props.initialCategory],
     () => {
       title.value = props.initialTitle ?? "";
       content.value = props.initialContent ?? "";
-      category.value = props.initialCategory ?? props.categories[0];
+      category.value = props.initialCategory ?? categories[0];
     }
 );
 
@@ -64,7 +77,7 @@ function onSubmit() {
   if (props.mode === "create") {
     title.value = "";
     content.value = "";
-    category.value = props.categories[0];
+    category.value = categories[0];
   }
 }
 </script>
