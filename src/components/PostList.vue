@@ -11,7 +11,9 @@
     <ul v-else class="grid">
       <li v-for="p in posts" :key="p.id" class="postCard">
         <router-link class="link" :to="`/posts/${p.id}`">
-          <div class="badge">{{ p.category }}</div>
+          <!-- ✅ 여기서 보여주는 값은 무조건 라벨로 정규화 -->
+          <div class="badge">{{ displayCategory(p.category) }}</div>
+
           <div class="title">{{ p.title }}</div>
           <div class="meta">작성자: {{ p.authorName }}</div>
           <div class="preview">{{ preview(p.content) }}</div>
@@ -27,6 +29,22 @@ import type { Post } from "../composables/usePosts";
 withDefaults(defineProps<{ posts?: Post[]; loading: boolean }>(), {
   posts: () => [],
 });
+
+/**
+ * posts.category가 예전 데이터(free/notice/qna)일 수도 있어서
+ * 화면 출력용으로 한번 더 정규화
+ */
+function displayCategory(raw: unknown) {
+  const v = String(raw ?? "").trim();
+  if (v === "자유" || v === "공지" || v === "QnA") return v;
+
+  const lower = v.toLowerCase();
+  if (lower === "free" || lower === "자유글") return "자유";
+  if (lower === "notice" || lower === "공지사항") return "공지";
+  if (lower === "qna" || lower === "qa" || lower === "q&a") return "QnA";
+
+  return "자유";
+}
 
 function preview(text: string) {
   return text.length > 120 ? text.slice(0, 120) + "..." : text;
