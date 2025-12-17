@@ -13,13 +13,37 @@ import {
 import { db, serverTimestamp } from "../firebase";
 
 /* ======================
+   카테고리 정규화
+   - DB에 예전 값(free/notice/qna 등)이 섞여 있어도
+     화면/저장은 항상 "자유/공지/QnA"로 통일
+====================== */
+export const CATEGORY_LABELS = ["자유", "공지", "QnA"] as const;
+export type CategoryLabel = (typeof CATEGORY_LABELS)[number];
+
+function normalizeCategory(raw: unknown): CategoryLabel {
+    const v = String(raw ?? "").trim();
+
+    // 이미 새 라벨이면 그대로
+    if (v === "자유" || v === "공지" || v === "QnA") return v;
+
+    // 예전/다른 표기들 매핑
+    const lower = v.toLowerCase();
+    if (lower === "free" || lower === "자유글") return "자유";
+    if (lower === "notice" || lower === "공지사항") return "공지";
+    if (lower === "qna" || lower === "qa" || lower === "q&a") return "QnA";
+
+    // 비어있거나 알 수 없는 값이면 기본값
+    return "자유";
+}
+
+/* ======================
    Post 타입 정의
 ====================== */
 export type Post = {
     id: string;
     title: string;
     content: string;
-    category: string;      // ✅ 카테고리
+    category: CategoryLabel; // ✅ 항상 라벨로 통일
     authorId: string;
     authorName: string;
     createdAt?: any;
@@ -40,18 +64,24 @@ export function usePosts() {
     function subscribePosts() {
         postsLoading.value = true;
 
-        const q = query(
-            collection(db, "posts"),
-            orderBy("createdAt", "desc")
-        );
+        const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
 
         return onSnapshot(q, (snapshot) => {
-            posts.value = snapshot.docs.map(
-                (d) => ({
+            posts.value = snapshot.docs.map((d) => {
+                const data = d.data() as any;
+
+                return {
                     id: d.id,
-                    ...(d.data() as Omit<Post, "id">),
-                })
-            );
+                    title: String(data.title ?? ""),
+                    content: String(data.content ?? ""),
+                    category: normalizeCategory(data.category),
+                    authorId: String(data.authorId ?? ""),
+                    authorName: String(data.authorName ?? ""),
+                    createdAt: data.createdAt,
+                    updatedAt: data.updatedAt,
+                };
+            });
+
             postsLoading.value = false;
         });
     }
@@ -61,9 +91,16 @@ export function usePosts() {
         const snap = await getDoc(doc(db, "posts", id));
         if (!snap.exists()) return null;
 
+        const data = snap.data() as any;
         return {
             id: snap.id,
-            ...(snap.data() as Omit<Post, "id">),
+            title: String(data.title ?? ""),
+            content: String(data.content ?? ""),
+            category: normalizeCategory(data.category),
+            authorId: String(data.authorId ?? ""),
+            authorName: String(data.authorName ?? ""),
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
         };
     }
 
@@ -71,14 +108,18 @@ export function usePosts() {
     async function createPost(input: {
         title: string;
         content: string;
-        category: string;     // ✅ 반드시 포함
+        category: string; // 들어오는 값이 뭐든 정규화해서 저장
         authorId: string;
         authorName: string;
     }) {
+        const title = input.title.trim();
+        const content = input.content.trim();
+        const category = normalizeCategory(input.category);
+
         await addDoc(collection(db, "posts"), {
-            title: input.title.trim(),
-            content: input.content.trim(),
-            category: input.category,
+            title,
+            content,
+            category, // ✅ 항상 "자유/공지/QnA"
             authorId: input.authorId,
             authorName: input.authorName,
             createdAt: serverTimestamp(),
@@ -95,12 +136,17 @@ export function usePosts() {
             category?: string;
         }
     ) {
-        await updateDoc(doc(db, "posts", id), {
+        const payload: Record<string, any> = {
             title: input.title.trim(),
             content: input.content.trim(),
-            ...(input.category && { category: input.category }),
             updatedAt: serverTimestamp(),
-        });
+        };
+
+        if (typeof input.category === "string") {
+            payload.category = normalizeCategory(input.category);
+        }
+
+        await updateDoc(doc(db, "posts", id), payload);
     }
 
     /* 🔹 게시글 삭제 */
@@ -112,7 +158,7 @@ export function usePosts() {
        외부 노출
     ====================== */
     return {
-        list: computed(() => posts.value),  // ✅ HomePage에서 사용
+        list: computed(() => posts.value),
         postsLoading,
         subscribePosts,
         getPostById,
