@@ -129,7 +129,7 @@ function onSubmit() {
   border-radius: 12px;
   border: 1px solid var(--line);
   background: var(--card2);
-  color: black;
+  color: var(--text);
   outline: none;
 }
 .input:focus { border-color: rgba(124, 58, 237, 0.6); }
