@@ -14,3 +14,6 @@ VITE_FIREBASE_STORAGE_BUCKET=term-project-87561.firebasestorage.app
 VITE_FIREBASE_MESSAGING_SENDER_ID=99863140088
 VITE_FIREBASE_APP_ID=1:99863140088:web:cdd1ca56185d226b890d0d 
 다음과 같이 환경변수를 선언하였습니다. 
+
+실행 방식은 사이트에 접속하신 후에 로그인을 진행하고, 후에 글을 작성하거나, 작성된 글을 둘러볼 수 있도록 만들었습니다. 
+글 작성을 누르면 주제를 정하고 제목과 글 내용을 작성하여 포스팅하도록 만들었습니다. 만약 글이 만족스럽지 못하다면 내용을 수정하거나 삭제하는 기능도 포함하였습니다. 
